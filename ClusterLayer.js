@@ -82,24 +82,45 @@ window.ClusterLayer = L.Class.extend({
 
     _onObserverData: function(data) {
         var layer = this.options.dataLayer
-        var markers = data.added.map(function (item) {
-            var itemProperties = layer.getItemProperties(item.properties)
-            var itemGeoJson = item.properties[item.properties.length - 1]
+
+        var markers = data.added.map(function (vectorTileItem) {
+            // var itemProperties = layer.getItemProperties(vectorTileItem.properties)
+            var itemGeoJson = vectorTileItem.properties[vectorTileItem.properties.length - 1]
             if (itemGeoJson.type !== 'POINT') {
                 return
             }
 
+            var parsedStyleKeys = vectorTileItem.item.parsedStyleKeys
+            var itemStyle = layer.getItemStyle(vectorTileItem.id)
             var latlng = L.Projection.Mercator.unproject({
                 x: itemGeoJson.coordinates[0],
                 y: itemGeoJson.coordinates[1]
             })
 
-            return L.marker(latlng)
+            return createMarker(latlng, L.extend({}, parsedStyleKeys || {}, itemStyle || {}))
         }).filter(function (item) {
             return !!item
         })
 
         this._markerClusterGroup.clearLayers()
         this._markerClusterGroup.addLayers(markers)
+
+        function createMarker(latlng, itemStyle) {
+            return L.marker(latlng, {
+                icon: createMarkerIcon(itemStyle)
+            })
+        }
+
+        function createMarkerIcon(itemStyle) {
+            if (itemStyle && itemStyle.iconUrl) {
+                var iconAnchor = itemStyle.image ? [itemStyle.sx / 2, itemStyle.sy / 2] : [8, 10]
+                return L.icon({
+                    iconAnchor: iconAnchor,
+                    iconUrl: itemStyle.iconUrl
+                })
+            } else {
+                return L.gmxUtil.getSVGIcon(itemStyle)
+            }
+        }
     }
 })
