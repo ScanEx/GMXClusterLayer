@@ -82,7 +82,7 @@ window.ClusterLayer = L.Class.extend({
     _onObserverData: function(data) {
         var layer = this.options.dataLayer
 
-        var markers = data.added.map(function (vectorTileItem) {
+        var markers = data.added.map((vectorTileItem) => {
             // var itemProperties = layer.getItemProperties(vectorTileItem.properties)
             var itemGeoJson = vectorTileItem.properties[vectorTileItem.properties.length - 1]
             if (itemGeoJson.type !== 'POINT') {
@@ -109,9 +109,16 @@ window.ClusterLayer = L.Class.extend({
         this._markerClusterGroup.addLayers(markers)
 
         function createIconMarker(latlng, itemStyle) {
-            return L.marker(latlng, {
-                icon: createIconMarkerIcon(itemStyle)
-            })
+            if (itemStyle.rotate) {
+                return rotatedMarker(latlng, {
+                    icon: createIconMarkerIcon(itemStyle),
+                    angle: itemStyle.rotate
+                })
+            } else {
+                return L.marker(latlng, {
+                    icon: createIconMarkerIcon(itemStyle)
+                })
+            }
         }
 
         function createIconMarkerIcon(itemStyle) {
