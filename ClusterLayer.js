@@ -67,12 +67,14 @@ window.ClusterLayer = L.Class.extend({
     },
 
     _bindDataProvider: function() {
+        // this.dataLayer.getIcons(() => {
         this._observer = this.options.dataLayer.addObserver({
             type: 'resend',
             filters: ['styleFilter'],
             dateInterval: this._dateInterval,
             callback: this._onObserverData.bind(this)
         })
+        // })
     },
 
     _unbindDataProvider: function() {
@@ -90,14 +92,18 @@ window.ClusterLayer = L.Class.extend({
                 return
             }
 
-            var parsedStyleKeys = vectorTileItem.item.parsedStyleKeys
-            var itemStyle = layer.getItemStyle(vectorTileItem.id)
+            var itemStyle = vectorTileItem.item.parsedStyleKeys || layer.getItemStyle(vectorTileItem.id)
+
             var latlng = L.Projection.Mercator.unproject({
                 x: itemGeoJson.coordinates[0],
                 y: itemGeoJson.coordinates[1]
             })
 
-            return createMarker(latlng, L.extend({}, parsedStyleKeys || {}, itemStyle || {}))
+            if (itemStyle.iconUrl) {
+                return createIconMarker(latlng, itemStyle)
+            } else {
+                return L.marker(latlng)
+            }
         }).filter(function (item) {
             return !!item
         })
@@ -105,13 +111,13 @@ window.ClusterLayer = L.Class.extend({
         this._markerClusterGroup.clearLayers()
         this._markerClusterGroup.addLayers(markers)
 
-        function createMarker(latlng, itemStyle) {
+        function createIconMarker(latlng, itemStyle) {
             return L.marker(latlng, {
-                icon: createMarkerIcon(itemStyle)
+                icon: createIconMarkerIcon(itemStyle)
             })
         }
 
-        function createMarkerIcon(itemStyle) {
+        function createIconMarkerIcon(itemStyle) {
             if (itemStyle && itemStyle.iconUrl) {
                 var iconAnchor = itemStyle.image ? [itemStyle.sx / 2, itemStyle.sy / 2] : [8, 10]
                 return L.icon({
