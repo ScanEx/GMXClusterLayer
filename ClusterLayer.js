@@ -39,18 +39,17 @@ window.ClusterLayer = L.Class.extend({
                 [p1.lng, p1.lat],
                 [p2.lng, p2.lat]
             ])
-        this._observer.setBounds(bbox)
+        this._observer && this._observer.setBounds(bbox)
     },
 
     onAdd: function(map) {
-        this._bindDataProvider()
-
         this._map = map
         this._styleManager = this.options.dataLayer._gmx.styleManager
-        this._styleManager.initStyles().then(function() {
-            this._styleManager.gmx.currentZoom = this._map.getZoom()
+        this._styleManager.initStyles().then(() => {
             map.on('moveend', this._updateBbox, this)
-        }.bind(this))
+            this._updateBbox()
+            this._bindDataProvider()
+        })
 
         map.addLayer(this._markerClusterGroup)
     },
@@ -67,14 +66,12 @@ window.ClusterLayer = L.Class.extend({
     },
 
     _bindDataProvider: function() {
-        // this.dataLayer.getIcons(() => {
         this._observer = this.options.dataLayer.addObserver({
             type: 'resend',
             filters: ['styleFilter'],
             dateInterval: this._dateInterval,
             callback: this._onObserverData.bind(this)
         })
-        // })
     },
 
     _unbindDataProvider: function() {
