@@ -26,7 +26,8 @@ window.ClusterLayer = L.Class.extend({
             'singleMarkerMode',
             'spiderLegPolylineOptions',
             'spiderfyDistanceMultiplier',
-            'iconCreateFunction'
+            'iconCreateFunction',
+            'maxZoom'
         ]))
     },
 
@@ -52,7 +53,7 @@ window.ClusterLayer = L.Class.extend({
         })
 
         map.addLayer(this._markerClusterGroup)
-        this._bindDefaultPopup()
+        this._bindPopupEvents()
     },
 
     onRemove: function(map) {
@@ -64,6 +65,30 @@ window.ClusterLayer = L.Class.extend({
     setDateInterval: function(dateBegin, dateEnd) {
         this._dateInterval = [dateBegin, dateEnd]
         this._observer && this._observer.setDateInterval.apply(this._observer, this._dateInterval)
+    },
+
+    createPopup: function ({ id, properties }) {
+        const { dataLayer } = this.options
+        const propertiesHash = dataLayer.getItemProperties(properties)
+        const balloonData = dataLayer._gmx.styleManager.getItemBalloon(id)
+
+        if (balloonData && !balloonData.DisableBalloonOnClick) {
+            var style = dataLayer.getItemStyle(id)
+            if (style && style.iconAnchor) {
+                var protoOffset = L.Popup.prototype.options.offset
+                this._popup.options.offset = [-protoOffset[0] - style.iconAnchor[0] + style.sx / 2,
+                    protoOffset[1] - style.iconAnchor[1] + style.sy / 2
+                ]
+            }
+
+            return L.popup()
+                .setContent(L.gmxUtil.parseBalloonTemplate(balloonData.templateBalloon, {
+                    properties: propertiesHash,
+                    tileAttributeTypes: dataLayer._gmx.tileAttributeTypes,
+                    unitOptions: this._map.options || {},
+                    geometries: [properties[properties.length - 1]]
+                }))
+        }
     },
 
     _bindDataProvider: function() {
@@ -134,68 +159,29 @@ window.ClusterLayer = L.Class.extend({
         }
     },
 
-    _defaultPopupOnClustersMarkerClick: function ({ layer, latlng }) {
+    _popupOnClustersMarkerClick: function ({ layer, latlng }) {
         const { dataLayer } = this.options
         const item = dataLayer._gmx.dataManager.getItem(layer.options.id)
 
-        // if (currentSpiderfiedCluster && !(currentSpiderfiedCluster.getAllChildMarkers().indexOf(ev.layer) + 1)) {
-        //     currentSpiderfiedCluster.unspiderfy();
-        //     markers.once('unspiderfied', function () {
-        //         this._openPopup(propsArr, ev.latlng);
-        //     }, this);
-        // } else {
-        this._openPopup(item, latlng);
-        // }
-    },
-
-    _defaultPopupOnClustersClusterClick: function (ev) {
-
-    },
-
-    _defaultPopupOnClustersAnimationEnd: function (ev) {
-
-    },
-
-    _defaultPopupOnClustersSpiderfied: function (ev) {
-
-    },
-
-    _defaultPopupOnClustersUnspiderfied: function (ev) {
-
-    },
-
-    _bindDefaultPopup: function () {
-        const mcg = this._markerClusterGroup
-        mcg.on('click', this._defaultPopupOnClustersMarkerClick, this)
-    },
-
-    _unbindDefaultPopup: function () {
-
-    },
-
-    _openPopup: function ({ id, properties }, latlng) {
-        const { dataLayer } = this.options
-        const propertiesHash = dataLayer.getItemProperties(properties)
-        const balloonData = dataLayer._gmx.styleManager.getItemBalloon(id)
-
-        if (balloonData && !balloonData.DisableBalloonOnClick) {
-            var style = dataLayer.getItemStyle(id)
-            if (style && style.iconAnchor) {
-                var protoOffset = L.Popup.prototype.options.offset
-                this._popup.options.offset = [-protoOffset[0] - style.iconAnchor[0] + style.sx / 2,
-                    protoOffset[1] - style.iconAnchor[1] + style.sy / 2
-                ]
-            }
-
-            L.popup()
-                .setLatLng(latlng)
-                .setContent(L.gmxUtil.parseBalloonTemplate(balloonData.templateBalloon, {
-                    properties: propertiesHash,
-                    tileAttributeTypes: dataLayer._gmx.tileAttributeTypes,
-                    unitOptions: this._map.options || {},
-                    geometries: [properties[properties.length - 1]]
-                }))
-                .openOn(this._map)
+        const popup = this.createPopup(item)
+        if (!popup) {
+            return
         }
+
+        this._popup = popup
+        this._popup
+            .setLatLng(latlng)
+            .openOn(this._map)
+    },
+
+    _popupOnClustersAnimationEnd: function (ev) {
+        const map = this._popup && this._popup._map
+        map && map.removeLayer(this._popup)
+    },
+
+    _bindPopupEvents: function () {
+        const mcg = this._markerClusterGroup
+        mcg.on('click', this._popupOnClustersMarkerClick, this)
+        mcg.on('animationend', this._popupOnClustersAnimationEnd, this)
     }
 })
