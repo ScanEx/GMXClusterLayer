@@ -61,14 +61,32 @@ function pick(obj, keys) {
     }, {})
 }
 
+function bool(v) {
+    if (v === 'false') {
+        return false
+    }
+    return !!v
+}
+
 window.nsGmx = window.nsGmx || {}
 
 window.nsGmx.ClusterLayer = L.Class.extend({
+    options: {
+        dataLayer: null,
+        dataLayerId: '',
+        openPopupOnClick: true,
+        openPopupOnHover: undefined
+    },
+
     // options.dataLayer
     // options.dataLayerId
+    // options.openPopupOnClick
+    // options.openPopupOnHover
     // + MarkerClusterGroup options
     initialize: function(options) {
         L.setOptions(this, options)
+        this.options.openPopupOnClick = bool(this.options.openPopupOnClick)
+        this.options.openPopupOnHover = bool(this.options.openPopupOnHover)
         this._markerClusterGroup = L.markerClusterGroup(pick(this.options, [
             'showCoverageOnHover',
             'zoomToBoundsOnClick',
@@ -240,7 +258,7 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         }
     },
 
-    _popupOnClustersMarkerClick: function ({ layer: marker, latlng, originalEvent }) {
+    _openPopup: function ({ layer: marker, latlng, originalEvent }) {
         const item = this._dataLayer._gmx.dataManager.getItem(marker.options.id)
         const layer = this._dataLayer
         const parsedProperties = layer.getItemProperties(item.properties)
@@ -251,9 +269,42 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         }
 
         this._popup = popup
+
+        popup.once('close', () => {
+            this._popupMode = ''
+            this._popup = null
+        })
+
         this._popup
             .setLatLng(latlng)
             .openOn(this._map)
+    },
+
+    _closePopup: function() {
+        if (!this._popup) {
+            return
+        }
+
+        this._map.removeLayer(this._popup)
+        this._popup = null
+    },
+
+    _popupOnClustersMarkerMouseover: function (le) {
+        if (!this.options.openPopupOnHover) {
+            return
+        }
+
+        if (!this._popupMode) {
+            this._popupMode = 'hover'
+            this._openPopup(le)
+        }
+    },
+
+    _popupOnClustersMarkerMouseout: function (le) {
+        if (this._popupMode === 'hover') {
+            this._closePopup()
+            this._popupMode = ''
+        }
     },
 
     _popupOnClustersAnimationEnd: function (ev) {
@@ -261,9 +312,20 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         map && map.removeLayer(this._popup)
     },
 
+    _popupOnClustersMarkerClick: function (le) {
+        if (!this.options.openPopupOnClick) {
+            return
+        }
+
+        this._popupMode = 'click'
+        this._openPopup(le)
+    },
+
     _bindPopupEvents: function () {
         const mcg = this._markerClusterGroup
-        mcg.on('click', this._popupOnClustersMarkerClick, this)
         mcg.on('animationend', this._popupOnClustersAnimationEnd, this)
+        mcg.on('mouseover', this._popupOnClustersMarkerMouseover, this)
+        mcg.on('mouseout', this._popupOnClustersMarkerMouseout, this)
+        mcg.on('click', this._popupOnClustersMarkerClick, this)
     }
 })
