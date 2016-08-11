@@ -131,9 +131,7 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         this._observer && this._observer.setDateInterval.apply(this._observer, this._dateInterval)
     },
 
-    createPopup: function ({ id, properties }) {
-        const dataLayer = this._dataLayer;
-        const propertiesHash = dataLayer.getItemProperties(properties)
+    createPopup: function ({ parsedProperties: propertiesHash, item: { id, propertiesArr }, layer: dataLayer }) {
         const balloonData = dataLayer._gmx.styleManager.getItemBalloon(id)
 
         if (balloonData && !balloonData.DisableBalloonOnClick) {
@@ -150,7 +148,7 @@ window.nsGmx.ClusterLayer = L.Class.extend({
                     properties: propertiesHash,
                     tileAttributeTypes: dataLayer._gmx.tileAttributeTypes,
                     unitOptions: this._map.options || {},
-                    geometries: [properties[properties.length - 1]]
+                    geometries: [propertiesArr[properties.length - 1]]
                 }))
         }
     },
@@ -242,10 +240,12 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         }
     },
 
-    _popupOnClustersMarkerClick: function ({ layer, latlng }) {
-        const item = this._dataLayer._gmx.dataManager.getItem(layer.options.id)
+    _popupOnClustersMarkerClick: function ({ layer: marker, latlng, originalEvent }) {
+        const item = this._dataLayer._gmx.dataManager.getItem(marker.options.id)
+        const layer = this._dataLayer
+        const parsedProperties = layer.getItemProperties(item.properties)
 
-        const popup = this.createPopup(item)
+        const popup = this.createPopup({ parsedProperties, item, layer, originalEvent })
         if (!popup) {
             return
         }
