@@ -8,7 +8,9 @@ function pick(obj, keys) {
     }, {})
 }
 
-window.ClusterLayer = L.Class.extend({
+window.nsGmx = window.nsGmx || {}
+
+window.nsGmx.ClusterLayer = L.Class.extend({
     // options.dataLayer
     // + MarkerClusterGroup options
     initialize: function(options) {
