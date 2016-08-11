@@ -12,6 +12,7 @@ window.nsGmx = window.nsGmx || {}
 
 window.nsGmx.ClusterLayer = L.Class.extend({
     // options.dataLayer
+    // options.dataLayerId
     // + MarkerClusterGroup options
     initialize: function(options) {
         L.setOptions(this, options)
@@ -47,11 +48,17 @@ window.nsGmx.ClusterLayer = L.Class.extend({
 
     onAdd: function(map) {
         this._map = map
-        this._styleManager = this.options.dataLayer._gmx.styleManager
-        this._styleManager.initStyles().then(() => {
+
+        this._getDataLayer().then((dataLayer) => {
+            this._dataLayer = dataLayer
+            this._styleManager = this._dataLayer._gmx.styleManager
+            return this._styleManager.initStyles()
+        }).then(() => {
             map.on('moveend', this._updateBbox, this)
             this._updateBbox()
             this._bindDataProvider()
+        }).catch((err) => {
+            console.error(err)
         })
 
         map.addLayer(this._markerClusterGroup)
@@ -59,9 +66,11 @@ window.nsGmx.ClusterLayer = L.Class.extend({
     },
 
     onRemove: function(map) {
-        this._unbindDataProvider()
-        map.removeLayer(this._markerClusterGroup)
-        map.off('moveend', this._updateBbox, this)
+        this._getDataLayer().then((dl) => {
+            this._unbindDataProvider()
+            map.removeLayer(this._markerClusterGroup)
+            map.off('moveend', this._updateBbox, this)
+        })
     },
 
     setDateInterval: function(dateBegin, dateEnd) {
@@ -70,7 +79,7 @@ window.nsGmx.ClusterLayer = L.Class.extend({
     },
 
     createPopup: function ({ id, properties }) {
-        const { dataLayer } = this.options
+        const dataLayer = this._dataLayer;
         const propertiesHash = dataLayer.getItemProperties(properties)
         const balloonData = dataLayer._gmx.styleManager.getItemBalloon(id)
 
@@ -93,8 +102,27 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         }
     },
 
+    _getDataLayer: function () {
+        if (!this._pGetDataLayer) {
+            this._pGetDataLayer = new Promise((resolve, reject) => {
+                if (this.options.dataLayer) {
+                    return resolve(this.options.dataLayer)
+                } else if (this.options.dataLayerRef) {
+                    const arRes = this.options.dataLayerRef.split(':')
+                    if (arRes.length !== 2) {
+                        return reject('invalid dataLayerRef')
+                    }
+                    return L.gmx.loadLayer(arRes[0], arRes[1]).then(resolve, reject)
+                }
+                return reject('dataLayer is not specified')
+            })
+        }
+
+        return this._pGetDataLayer
+    },
+
     _bindDataProvider: function() {
-        this._observer = this.options.dataLayer.addObserver({
+        this._observer = this._dataLayer.addObserver({
             type: 'resend',
             filters: ['styleFilter'],
             dateInterval: this._dateInterval,
@@ -103,7 +131,7 @@ window.nsGmx.ClusterLayer = L.Class.extend({
     },
 
     _unbindDataProvider: function() {
-        this.options.dataLayer.removeObserver(this._observer)
+        this._dataLayer.removeObserver(this._observer)
         this._observer = null
     },
 
@@ -162,8 +190,7 @@ window.nsGmx.ClusterLayer = L.Class.extend({
     },
 
     _popupOnClustersMarkerClick: function ({ layer, latlng }) {
-        const { dataLayer } = this.options
-        const item = dataLayer._gmx.dataManager.getItem(layer.options.id)
+        const item = this._dataLayer._gmx.dataManager.getItem(layer.options.id)
 
         const popup = this.createPopup(item)
         if (!popup) {
