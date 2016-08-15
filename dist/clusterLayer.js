@@ -78,6 +78,8 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         openPopupOnHover: undefined
     },
 
+    // options.minZoom
+    // options.maxZoom
     // options.dataLayer
     // options.dataLayerId
     // options.openPopupOnClick
@@ -100,8 +102,7 @@ window.nsGmx.ClusterLayer = L.Class.extend({
             'singleMarkerMode',
             'spiderLegPolylineOptions',
             'spiderfyDistanceMultiplier',
-            'iconCreateFunction',
-            'maxZoom'
+            'iconCreateFunction'
         ]))
     },
 
@@ -133,6 +134,8 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         })
 
         map.addLayer(this._markerClusterGroup)
+        map.on('zoomend', this._onMapZoomend, this)
+        this._onMapZoomend()
         this._bindPopupEvents()
     },
 
@@ -142,6 +145,7 @@ window.nsGmx.ClusterLayer = L.Class.extend({
             map.removeLayer(this._markerClusterGroup)
             map.off('moveend', this._updateBbox, this)
         })
+        map.off('zoomend', this._onMapZoomend, this)
     },
 
     setDateInterval: function(dateBegin, dateEnd) {
@@ -197,6 +201,18 @@ window.nsGmx.ClusterLayer = L.Class.extend({
                     unitOptions: this._map.options || {},
                     geometries: [propertiesArr[properties.length - 1]]
                 }))
+        }
+    },
+
+    _onMapZoomend: function (le) {
+        const { _map, _markerClusterGroup, options } = this
+        const hl = _map.hasLayer(_markerClusterGroup)
+        if (typeof options.minZoom === 'string' && _map.getZoom() < options.minZoom / 1) {
+            hl && _map.removeLayer(_markerClusterGroup)
+        } else if (typeof options.maxZoom === 'string' && _map.getZoom() > options.maxZoom / 1) {
+            hl && _map.removeLayer(_markerClusterGroup)
+        } else {
+            !hl && _map.addLayer(_markerClusterGroup)
         }
     },
 
