@@ -96,6 +96,35 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         this._observer && this._observer.setDateInterval.apply(this._observer, this._dateInterval)
     },
 
+    openPopup: function(itemId, originalEvent = null) {
+        const layer = this._dataLayer
+        const item = this._dataLayer._gmx.dataManager.getItem(itemId)
+
+        if (!item) { return }
+
+        const itemGeo = item.properties[item.properties.length - 1]
+        const latlng = L.Projection.Mercator.unproject({
+            x: itemGeo.coordinates[0],
+            y: itemGeo.coordinates[1]
+        })
+        const parsedProperties = layer.getItemProperties(item.properties)
+
+        const popup = this.createPopup({ parsedProperties, item, layer, originalEvent })
+
+        if (!popup) { return }
+
+        this._popup = popup
+
+        popup.once('close', () => {
+            this._popupMode = ''
+            this._popup = null
+        })
+
+        this._popup
+            .setLatLng(latlng)
+            .openOn(this._map)
+    },
+
     createPopup: function ({ parsedProperties: propertiesHash, item: { id, propertiesArr }, layer: dataLayer }) {
         const balloonData = dataLayer._gmx.styleManager.getItemBalloon(id)
 
@@ -205,28 +234,6 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         }
     },
 
-    _openPopup: function ({ layer: marker, latlng, originalEvent }) {
-        const item = this._dataLayer._gmx.dataManager.getItem(marker.options.id)
-        const layer = this._dataLayer
-        const parsedProperties = layer.getItemProperties(item.properties)
-
-        const popup = this.createPopup({ parsedProperties, item, layer, originalEvent })
-        if (!popup) {
-            return
-        }
-
-        this._popup = popup
-
-        popup.once('close', () => {
-            this._popupMode = ''
-            this._popup = null
-        })
-
-        this._popup
-            .setLatLng(latlng)
-            .openOn(this._map)
-    },
-
     _closePopup: function() {
         if (!this._popup) {
             return
@@ -236,14 +243,14 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         this._popup = null
     },
 
-    _popupOnClustersMarkerMouseover: function (le) {
+    _popupOnClustersMarkerMouseover: function ({ layer: marker, latlng, originalEvent }) {
         if (!this.options.openPopupOnHover) {
             return
         }
 
         if (!this._popupMode) {
             this._popupMode = 'hover'
-            this._openPopup(le)
+            this.openPopup(marker.options.id, originalEvent)
         }
     },
 
@@ -259,13 +266,13 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         map && map.removeLayer(this._popup)
     },
 
-    _popupOnClustersMarkerClick: function (le) {
+    _popupOnClustersMarkerClick: function ({ layer: marker, latlng, originalEvent }) {
         if (!this.options.openPopupOnClick) {
             return
         }
 
         this._popupMode = 'click'
-        this._openPopup(le)
+        this.openPopup(marker.options.id, originalEvent)
     },
 
     _bindPopupEvents: function () {
