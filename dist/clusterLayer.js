@@ -315,8 +315,8 @@ window.nsGmx.ClusterLayer = L.Class.extend({
     },
 
     _popupOnClustersAnimationEnd: function (ev) {
-        const map = this._popup && this._popup._map
-        map && map.removeLayer(this._popup)
+        // const map = this._popup && this._popup._map
+        // map && map.removeLayer(this._popup)
     },
 
     _popupOnClustersMarkerClick: function ({ layer: marker, latlng, originalEvent }) {
