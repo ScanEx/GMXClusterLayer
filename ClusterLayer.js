@@ -49,7 +49,9 @@ window.nsGmx.ClusterLayer = L.Class.extend({
             'singleMarkerMode',
             'spiderLegPolylineOptions',
             'spiderfyDistanceMultiplier',
-            'iconCreateFunction'
+            'iconCreateFunction',
+            'minZoom',
+            'maxZoom'
         ]))
     },
 
