@@ -71,9 +71,7 @@ function bool(v) {
     return !!v
 }
 
-window.nsGmx = window.nsGmx || {}
-
-window.nsGmx.ClusterLayer = L.Class.extend({
+const ClusterLayer = L.Class.extend({
     options: {
         dataLayer: null,
         dataLayerId: '',
@@ -357,4 +355,12 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         mcg.on('click', this._popupOnClustersMarkerClick, this)
     }
 })
+
+const nsGmx = window.nsGmx || {}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ClusterLayer
+} else {
+    nsGmx.ClusterLayer = ClusterLayer
+}
 }());

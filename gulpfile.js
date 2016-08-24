@@ -2,7 +2,7 @@ const concat = require('gulp-concat')
 const iife = require('gulp-iife')
 const gulp = require('gulp')
 
-const srcFiles = ['RotatedMarker.js', 'ClusterLayer.js']
+const srcFiles = ['RotatedMarker.js', 'ClusterLayer.js', 'factory.js']
 
 gulp.task('default', () => {
     return gulp.src(srcFiles)

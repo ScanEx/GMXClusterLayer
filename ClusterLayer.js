@@ -15,9 +15,7 @@ function bool(v) {
     return !!v
 }
 
-window.nsGmx = window.nsGmx || {}
-
-window.nsGmx.ClusterLayer = L.Class.extend({
+const ClusterLayer = L.Class.extend({
     options: {
         dataLayer: null,
         dataLayerId: '',
