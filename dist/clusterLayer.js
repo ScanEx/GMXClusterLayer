@@ -185,7 +185,7 @@ const ClusterLayer = L.Class.extend({
             .openOn(this._map)
     },
 
-    createPopup: function ({ parsedProperties: propertiesHash, item: { id, propertiesArr }, layer: dataLayer }) {
+    createPopup: function ({ parsedProperties: propertiesHash, item: { id, properties: propertiesArr }, layer: dataLayer }) {
         const balloonData = dataLayer._gmx.styleManager.getItemBalloon(id)
 
         if (balloonData && !balloonData.DisableBalloonOnClick) {
@@ -202,7 +202,7 @@ const ClusterLayer = L.Class.extend({
                     properties: propertiesHash,
                     tileAttributeTypes: dataLayer._gmx.tileAttributeTypes,
                     unitOptions: this._map.options || {},
-                    geometries: [propertiesArr[properties.length - 1]]
+                    geometries: [propertiesArr[propertiesArr.length - 1]]
                 }))
         }
     },
