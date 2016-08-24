@@ -1,3 +1,6 @@
+;(function() {
+"use strict";
+
 // https://github.com/bbecquet/Leaflet.PolylineDecorator/blob/master/src/L.RotatedMarker.js
 
 const RotatedMarker = L.Marker.extend({
@@ -354,3 +357,4 @@ window.nsGmx.ClusterLayer = L.Class.extend({
         mcg.on('click', this._popupOnClustersMarkerClick, this)
     }
 })
+}());
