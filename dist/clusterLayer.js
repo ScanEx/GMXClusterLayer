@@ -72,6 +72,8 @@ function bool(v) {
 }
 
 const ClusterLayer = L.Class.extend({
+    includes: [L.Mixin.Events],
+
     options: {
         dataLayer: null,
         dataLayerId: '',
@@ -280,6 +282,8 @@ const ClusterLayer = L.Class.extend({
         this._markerClusterGroup.clearLayers()
         this._markerClusterGroup.addLayers(markers)
 
+        this.fire('update')
+
         function createIconMarker(latlng, itemStyle, options) {
             if (itemStyle.rotate) {
                 return rotatedMarker(latlng, L.extend({}, {
@@ -304,6 +308,7 @@ const ClusterLayer = L.Class.extend({
                 return L.gmxUtil.getSVGIcon(itemStyle)
             }
         }
+
     },
 
     _closePopup: function() {
